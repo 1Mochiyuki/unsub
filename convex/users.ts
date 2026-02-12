@@ -7,6 +7,7 @@ import {
 } from './_generated/server'
 import { internal } from './_generated/api'
 import { auth } from './auth'
+import { invalidateSessions } from '@convex-dev/auth/server'
 
 export const getMe = query({
   args: {},
@@ -70,6 +71,49 @@ export const deleteUserData = internalMutation({
   },
 })
 
+export const getAuthAccountsForUser = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const accounts = await ctx.db
+      .query('authAccounts')
+      .withIndex('userIdAndProvider', (q) => q.eq('userId', args.userId))
+      .collect()
+    return accounts
+  },
+})
+
+export const deleteAuthAccount = internalMutation({
+  args: { accountId: v.id('authAccounts') },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.accountId)
+  },
+})
+
+export const deleteAuthDataForUser = internalMutation({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const authAccounts = await ctx.db
+      .query('authAccounts')
+      .withIndex('userIdAndProvider', (q) => q.eq('userId', args.userId))
+      .collect()
+
+    for (const account of authAccounts) {
+      const verificationCodes = await ctx.db
+        .query('authVerificationCodes')
+        .withIndex('accountId', (q) => q.eq('accountId', account._id))
+        .collect()
+
+      for (const code of verificationCodes) {
+        await ctx.db.delete(code._id)
+      }
+    }
+
+    for (const account of authAccounts) {
+      await ctx.db.delete(account._id)
+    }
+  },
+})
+
 export const deleteAccount = action({
   args: {},
   handler: async (ctx) => {
@@ -86,10 +130,14 @@ export const deleteAccount = action({
     }
 
     try {
+      await invalidateSessions(ctx, { userId })
+
+      await ctx.runMutation(internal.users.deleteAuthDataForUser, { userId })
+
       await ctx.runMutation(internal.users.deleteUserData, { userId })
     } catch (error) {
-      console.error('Failed to delete user data:', error)
-      throw new Error('Failed to delete account data')
+      console.error('Failed to delete account:', error)
+      throw new Error('Failed to delete account')
     }
   },
 })
