@@ -1,12 +1,8 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-
+import { ThemeProvider } from 'tanstack-theme-kit'
 import Header from '../components/Header'
-
-import ConvexProvider from '@/integrations/convex/provider'
-
 import appCss from '../styles.css?url'
+import ConvexProvider from '@/integrations/convex/provider'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -19,7 +15,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'UNSUB.',
       },
     ],
     links: [
@@ -41,19 +37,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ConvexProvider>
-          <Header />
-          {children}
-          <TanStackDevtools
-            config={{
-              position: 'bottom-right',
-            }}
-            plugins={[
-              {
-                name: 'Tanstack Router',
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-            ]}
-          />
+          <ThemeProvider attribute="class" defaultTheme="dark">
+            <Header />
+            <div className="flex-1">{children}</div>
+          </ThemeProvider>
         </ConvexProvider>
         <Scripts />
       </body>
