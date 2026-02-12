@@ -12,3 +12,7 @@ count.txt
 .vinxi
 todos.json
 .osgrep
+.sisyphus
+
+# Convex auto-generated files (don't commit these)
+convex/_generated/
