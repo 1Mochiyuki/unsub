@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { SelectionMode } from '../types/dashboard'
 
-interface SelectionBox {
+export interface SelectionBox {
   start: { x: number; y: number }
   current: { x: number; y: number }
 }
@@ -16,7 +16,6 @@ interface UseDragSelectionReturn {
   isSelecting: boolean
   selectionBox: SelectionBox | null
   handleMouseDown: (e: React.MouseEvent, currentSelection: Set<string>) => void
-  scrollOffset: { x: number; y: number }
 }
 
 export function useDragSelection({
@@ -26,11 +25,11 @@ export function useDragSelection({
 }: UseDragSelectionProps): UseDragSelectionReturn {
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null)
-  const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 0 })
 
   const selectionStartRef = useRef<{
     x: number
     y: number
+    offset: { left: number; top: number }
     initialSelection: Set<string>
     mode: SelectionMode
     clickedItemId: string | null
@@ -53,19 +52,31 @@ export function useDragSelection({
       return
     }
 
-    const start = { x: e.clientX, y: e.clientY }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const offset = {
+      left: rect.left + window.scrollX,
+      top: rect.top + window.scrollY,
+    }
+
+    const startRelative = {
+      x: e.pageX - offset.left,
+      y: e.pageY - offset.top,
+    }
     const mode = e.ctrlKey || e.metaKey ? 'TOGGLE' : 'REPLACE'
 
     const clickedItem = target.closest('[data-selection-item]')
     const clickedItemId = clickedItem?.getAttribute('data-id') || null
 
     setIsSelecting(true)
-    setSelectionBox({ start: { x: start.x, y: start.y }, current: start })
-    setScrollOffset({ x: window.scrollX, y: window.scrollY })
+    setSelectionBox({
+      start: startRelative,
+      current: startRelative,
+    })
 
     selectionStartRef.current = {
-      x: start.x,
-      y: start.y,
+      x: e.pageX,
+      y: e.pageY,
+      offset,
       initialSelection: new Set(currentSelection),
       mode,
       clickedItemId,
@@ -77,28 +88,42 @@ export function useDragSelection({
   }
 
   useEffect(() => {
-    if (!isSelecting) return
-
     const handleMouseMove = (e: MouseEvent) => {
-      setSelectionBox((prev: SelectionBox | null) =>
-        prev
-          ? {
-              ...prev,
-              current: { x: e.clientX, y: e.clientY },
-            }
-          : null,
-      )
+      if (!isSelecting || !selectionStartRef.current) return
 
       const start = selectionStartRef.current
-      if (!start) return
+      const offset = start.offset
 
-      const current = { x: e.clientX, y: e.clientY }
+      const currentRelative = {
+        x: e.pageX - offset.left,
+        y: e.pageY - offset.top,
+      }
+
+      setSelectionBox((prev) =>
+        prev ? { ...prev, current: currentRelative } : null,
+      )
+
+      const currentPage = { x: e.pageX, y: e.pageY }
+
+      // Calculate Viewport coordinates for intersection checking
+      // (Page coord - Scroll position = Viewport coord)
+      const scrollX = window.scrollX
+      const scrollY = window.scrollY
+
+      const startViewport = {
+        x: start.x - scrollX,
+        y: start.y - scrollY,
+      }
+      const currentViewport = {
+        x: currentPage.x - scrollX,
+        y: currentPage.y - scrollY,
+      }
 
       const boxRect = {
-        left: Math.min(start.x, current.x),
-        top: Math.min(start.y, current.y),
-        right: Math.max(start.x, current.x),
-        bottom: Math.max(start.y, current.y),
+        left: Math.min(startViewport.x, currentViewport.x),
+        top: Math.min(startViewport.y, currentViewport.y),
+        right: Math.max(startViewport.x, currentViewport.x),
+        bottom: Math.max(startViewport.y, currentViewport.y),
       }
 
       const newSelection = new Set(
@@ -106,7 +131,7 @@ export function useDragSelection({
       )
 
       itemsRef.current.forEach((el, id) => {
-        const rect = el.getBoundingClientRect()
+        const rect = el.getBoundingClientRect() // Returns viewport coordinates
 
         const isIntersecting = !(
           rect.right < boxRect.left ||
@@ -135,8 +160,9 @@ export function useDragSelection({
       const start = selectionStartRef.current
 
       if (start) {
-        const diffX = e.clientX - start.x
-        const diffY = e.clientY - start.y
+        // Use Page coordinates for distance check too
+        const diffX = e.pageX - start.x
+        const diffY = e.pageY - start.y
         const dist = Math.sqrt(diffX * diffX + diffY * diffY)
 
         if (dist < 5) {
@@ -153,6 +179,7 @@ export function useDragSelection({
               onSelectionChange(new Set([start.clickedItemId]))
             }
           } else if (start.mode === 'REPLACE') {
+            // Clicked empty space
             onSelectionChange(new Set())
           }
         }
@@ -163,28 +190,20 @@ export function useDragSelection({
       selectionStartRef.current = null
     }
 
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
+    if (isSelecting) {
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', handleMouseUp)
+    }
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
   }, [isSelecting, itemsRef, contentRef, onSelectionChange])
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollOffset({ x: window.scrollX, y: window.scrollY })
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-    }
-  }, [])
-
   return {
     isSelecting,
     selectionBox,
     handleMouseDown,
-    scrollOffset,
   }
 }
