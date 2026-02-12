@@ -1,4 +1,5 @@
 import { v } from 'convex/values'
+import { invalidateSessions } from '@convex-dev/auth/server'
 import {
   action,
   internalMutation,
@@ -7,7 +8,6 @@ import {
 } from './_generated/server'
 import { internal } from './_generated/api'
 import { auth } from './auth'
-import { invalidateSessions } from '@convex-dev/auth/server'
 
 export const getMe = query({
   args: {},
