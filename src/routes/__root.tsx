@@ -1,6 +1,7 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { ThemeProvider } from 'tanstack-theme-kit'
 import Header from '../components/Header'
+import { Footer } from '../components/Footer'
 import appCss from '../styles.css?url'
 import ConvexProvider from '@/integrations/convex/provider'
 
@@ -38,8 +39,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <ConvexProvider>
           <ThemeProvider attribute="class" defaultTheme="dark">
-            <Header />
-            <div className="flex-1">{children}</div>
+            <div className="relative flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
           </ThemeProvider>
         </ConvexProvider>
         <Scripts />
