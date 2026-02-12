@@ -9,11 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
+  id: '/terms-of-service',
+  path: '/terms-of-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -40,12 +52,16 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +69,34 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/history' | '/login'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/history'
+    | '/login'
+    | '/privacy-policy'
+    | '/terms-of-service'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/history' | '/login'
-  id: '__root__' | '/' | '/dashboard' | '/history' | '/login'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/history'
+    | '/login'
+    | '/privacy-policy'
+    | '/terms-of-service'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/history'
+    | '/login'
+    | '/privacy-policy'
+    | '/terms-of-service'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,10 +104,26 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   HistoryRoute: typeof HistoryRoute
   LoginRoute: typeof LoginRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  TermsOfServiceRoute: typeof TermsOfServiceRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms-of-service': {
+      id: '/terms-of-service'
+      path: '/terms-of-service'
+      fullPath: '/terms-of-service'
+      preLoaderRoute: typeof TermsOfServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -107,6 +160,8 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   HistoryRoute: HistoryRoute,
   LoginRoute: LoginRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
+  TermsOfServiceRoute: TermsOfServiceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
