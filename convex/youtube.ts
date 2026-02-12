@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import { action, internalMutation, query } from './_generated/server'
 import { api, internal } from './_generated/api'
 import { auth } from './auth'
-import { encrypt, decrypt } from '../src/lib/encryption'
+import { encrypt, decrypt } from '../src/lib/encryption.node'
 
 const YOUTUBE_API_BASE = 'https://www.googleapis.com/youtube/v3'
 const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token'
