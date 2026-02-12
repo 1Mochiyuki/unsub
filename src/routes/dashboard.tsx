@@ -72,7 +72,7 @@ function DashboardPage() {
 
   const { isSelecting, selectionBox, handleMouseDown, scrollOffset } =
     useDragSelection({
-      onSelectionChange,
+      onSelectionChange: setSelection,
       itemsRef,
       contentRef,
     })
