@@ -77,12 +77,11 @@ function HistoryPage() {
   const itemsRef = useRef<Map<string, HTMLDivElement>>(new Map())
   const contentRef = useRef<HTMLDivElement>(null)
 
-  const { isSelecting, selectionBox, handleMouseDown, scrollOffset } =
-    useDragSelection({
-      onSelectionChange: setSelection,
-      itemsRef,
-      contentRef,
-    })
+  const { isSelecting, selectionBox, handleMouseDown } = useDragSelection({
+    onSelectionChange: setSelection,
+    itemsRef,
+    contentRef,
+  })
 
   const [confirmation, setConfirmation] = useState<{
     open: boolean
@@ -201,7 +200,6 @@ function HistoryPage() {
           <SelectionOverlay
             isVisible={isSelecting}
             selectionBox={selectionBox}
-            scrollOffset={scrollOffset}
           />
           <div
             ref={contentRef}
