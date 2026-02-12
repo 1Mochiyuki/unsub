@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { useConvexAuth, useAction, useQuery } from 'convex/react'
+import { useAction, useConvexAuth, useQuery } from 'convex/react'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { LogIn, LogOut } from 'lucide-react'
 import { api } from 'convex/_generated/api'
@@ -27,7 +27,7 @@ export default function Header() {
     await revokeGoogleToken()
     await signOut()
   }
-  const user = useQuery(api.profile.getUserProfile)
+  const user = useQuery(api.users.getMe)
 
   return (
     <header className="px-6 py-4 flex items-center justify-between bg-background border-b border-border text-foreground shadow-lg backdrop-blur-md sticky top-0 z-50">
@@ -60,7 +60,10 @@ export default function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="w-10 h-10 border-2 border-border shadow-lg hover:border-primary/50 transition-colors cursor-pointer">
-                <AvatarImage src={user?.image!} referrerPolicy="no-referrer" />
+                <AvatarImage
+                  src={user?.image ?? undefined}
+                  referrerPolicy="no-referrer"
+                />
                 <AvatarFallback className="bg-primary text-primary-foreground font-bold text-sm">
                   {user?.name?.charAt(0)}
                 </AvatarFallback>

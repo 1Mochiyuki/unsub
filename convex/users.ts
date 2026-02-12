@@ -15,9 +15,9 @@ export const getMe = query({
     }
     return {
       _id: user._id,
-      name: user.name,
-      email: user.email,
-      image: user.image,
+      name: user.name || null,
+      email: user.email || null,
+      image: user.image || null,
     }
   },
 })

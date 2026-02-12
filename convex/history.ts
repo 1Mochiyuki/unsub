@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { auth } from './auth'
+import { requireAuth } from './utils/auth'
 import type { Id } from './_generated/dataModel'
 
 export const logUnsubscribe = mutation({
@@ -9,10 +10,7 @@ export const logUnsubscribe = mutation({
     channelTitle: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx)
-    if (!userId) {
-      throw new Error('Not authenticated')
-    }
+    const userId = await requireAuth(ctx)
 
     await ctx.db.insert('unsubscribed_history', {
       userId,
@@ -45,10 +43,7 @@ export const removeHistoryItem = mutation({
     id: v.id('unsubscribed_history'),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx)
-    if (!userId) {
-      throw new Error('Not authenticated')
-    }
+    const userId = await requireAuth(ctx)
 
     const item = await ctx.db.get(args.id)
     if (!item || item.userId !== userId) {
@@ -64,10 +59,7 @@ export const bulkDelete = mutation({
     ids: v.array(v.id('unsubscribed_history')),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx)
-    if (!userId) {
-      throw new Error('Not authenticated')
-    }
+    const userId = await requireAuth(ctx)
 
     if (args.ids.length > 100) {
       throw new Error('Too many items')
@@ -87,10 +79,7 @@ export const bulkResubscribe = mutation({
     ids: v.array(v.id('unsubscribed_history')),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx)
-    if (!userId) {
-      throw new Error('Not authenticated')
-    }
+    const userId = await requireAuth(ctx)
 
     if (args.ids.length > 50) {
       throw new Error('Too many items')

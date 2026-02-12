@@ -4,194 +4,194 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
 import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationNext,
-    PaginationPrevious,
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
 } from '@/components/ui/pagination'
 
 interface HistoryPaginationProps {
-    currentPage: number
-    pageSize: number
-    pageSizeOptions: Array<number>
-    totalPages: number
-    filteredCount: number
-    isFetching: boolean
-    onPageChange: (page: number) => void
-    onPageSizeChange: (size: number) => void
+  currentPage: number
+  pageSize: number
+  pageSizeOptions: Array<number>
+  totalPages: number
+  filteredCount: number
+  isFetching: boolean
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
 }
 
 export function HistoryPagination({
-    currentPage,
-    pageSize,
-    pageSizeOptions,
-    totalPages,
-    filteredCount,
-    isFetching,
-    onPageChange,
-    onPageSizeChange,
+  currentPage,
+  pageSize,
+  pageSizeOptions,
+  totalPages,
+  filteredCount,
+  isFetching,
+  onPageChange,
+  onPageSizeChange,
 }: HistoryPaginationProps) {
-    const [jumpInput, setJumpInput] = useState('')
-    const [showJumpInput, setShowJumpInput] = useState(false)
+  const [jumpInput, setJumpInput] = useState('')
+  const [showJumpInput, setShowJumpInput] = useState(false)
 
-    const handleJump = () => {
-        const page = parseInt(jumpInput)
-        if (page >= 1 && page <= totalPages) {
-            onPageChange(page)
-            setShowJumpInput(false)
-            setJumpInput('')
-        }
+  const handleJump = () => {
+    const page = parseInt(jumpInput)
+    if (page >= 1 && page <= totalPages) {
+      onPageChange(page)
+      setShowJumpInput(false)
+      setJumpInput('')
     }
+  }
 
-    const handleJumpKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            e.preventDefault()
-            handleJump()
-        } else if (e.key === 'Escape') {
-            e.preventDefault()
-            setShowJumpInput(false)
-            setJumpInput('')
-        }
+  const handleJumpKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleJump()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setShowJumpInput(false)
+      setJumpInput('')
     }
+  }
 
-    const canGoFirst = currentPage > 1
-    const canGoLast = currentPage < totalPages
+  const canGoFirst = currentPage > 1
+  const canGoLast = currentPage < totalPages
 
-    return (
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 pb-8 border-t">
-            <div className="flex items-center gap-4">
-                <span className="text-sm text-muted-foreground">
-                    Showing {Math.min((currentPage - 1) * pageSize + 1, filteredCount)} -{' '}
-                    {Math.min(currentPage * pageSize, filteredCount)} of {filteredCount}{' '}
-                    Unsubscribed Channels
-                </span>
-                <Select
-                    value={pageSize.toString()}
-                    onValueChange={(value) => onPageSizeChange(Number(value))}
-                >
-                    <SelectTrigger className="w-32.5 bg-background border focus:ring-primary/30 text-muted-foreground">
-                        <SelectValue placeholder="50" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border">
-                        {pageSizeOptions.map((size) => (
-                            <SelectItem
-                                key={size}
-                                value={size.toString()}
-                                className="text-foreground hover:bg-muted"
-                            >
-                                {size} / page
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
+  return (
+    <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 pb-8 border-t">
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-muted-foreground">
+          Showing {Math.min((currentPage - 1) * pageSize + 1, filteredCount)} -{' '}
+          {Math.min(currentPage * pageSize, filteredCount)} of {filteredCount}{' '}
+          Unsubscribed Channels
+        </span>
+        <Select
+          value={pageSize.toString()}
+          onValueChange={(value) => onPageSizeChange(Number(value))}
+        >
+          <SelectTrigger className="w-32.5 bg-background border focus:ring-primary/30 text-muted-foreground">
+            <SelectValue placeholder="50" />
+          </SelectTrigger>
+          <SelectContent className="bg-background border">
+            {pageSizeOptions.map((size) => (
+              <SelectItem
+                key={size}
+                value={size.toString()}
+                className="text-foreground hover:bg-muted"
+              >
+                {size} / page
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-            <Pagination className="justify-end w-auto mx-0">
-                <PaginationContent>
-                    <PaginationItem>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                                if (canGoFirst && !isFetching) {
-                                    onPageChange(1)
-                                }
-                            }}
-                            disabled={!canGoFirst || isFetching}
-                            className="h-9 w-9"
-                            aria-label="First page"
-                        >
-                            <ChevronFirst className="h-4 w-4" />
-                        </Button>
-                    </PaginationItem>
+      <Pagination className="justify-end w-auto mx-0">
+        <PaginationContent>
+          <PaginationItem>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                if (canGoFirst && !isFetching) {
+                  onPageChange(1)
+                }
+              }}
+              disabled={!canGoFirst || isFetching}
+              className="h-9 w-9"
+              aria-label="First page"
+            >
+              <ChevronFirst className="h-4 w-4" />
+            </Button>
+          </PaginationItem>
 
-                    <PaginationItem>
-                        <PaginationPrevious
-                            href="#"
-                            onClick={(e) => {
-                                e.preventDefault()
-                                if (currentPage > 1 && !isFetching) {
-                                    onPageChange(currentPage - 1)
-                                }
-                            }}
-                            className={cn(
-                                currentPage === 1 || isFetching
-                                    ? 'pointer-events-none opacity-50'
-                                    : 'cursor-pointer',
-                            )}
-                            aria-label="Previous page"
-                        />
-                    </PaginationItem>
+          <PaginationItem>
+            <PaginationPrevious
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                if (currentPage > 1 && !isFetching) {
+                  onPageChange(currentPage - 1)
+                }
+              }}
+              className={cn(
+                currentPage === 1 || isFetching
+                  ? 'pointer-events-none opacity-50'
+                  : 'cursor-pointer',
+              )}
+              aria-label="Previous page"
+            />
+          </PaginationItem>
 
-                    <PaginationItem>
-                        {showJumpInput ? (
-                            <Input
-                                type="number"
-                                min={1}
-                                max={totalPages}
-                                value={jumpInput}
-                                onChange={(e) => setJumpInput(e.target.value)}
-                                onKeyDown={handleJumpKeyDown}
-                                onBlur={handleJump}
-                                className="w-20 h-9 text-center bg-background border"
-                                placeholder={`1-${totalPages}`}
-                                autoFocus
-                            />
-                        ) : (
-                            <button
-                                onClick={() => setShowJumpInput(true)}
-                                className="text-sm text-muted-foreground px-4 hover:text-foreground transition-colors"
-                                disabled={isFetching}
-                            >
-                                Page {currentPage} of {totalPages || 1}
-                            </button>
-                        )}
-                    </PaginationItem>
+          <PaginationItem>
+            {showJumpInput ? (
+              <Input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={jumpInput}
+                onChange={(e) => setJumpInput(e.target.value)}
+                onKeyDown={handleJumpKeyDown}
+                onBlur={handleJump}
+                className="w-20 h-9 text-center bg-background border"
+                placeholder={`1-${totalPages}`}
+                autoFocus
+              />
+            ) : (
+              <button
+                onClick={() => setShowJumpInput(true)}
+                className="text-sm text-muted-foreground px-4 hover:text-foreground transition-colors"
+                disabled={isFetching}
+              >
+                Page {currentPage} of {totalPages || 1}
+              </button>
+            )}
+          </PaginationItem>
 
-                    <PaginationItem>
-                        <PaginationNext
-                            href="#"
-                            onClick={(e) => {
-                                e.preventDefault()
-                                if (currentPage < (totalPages || 1) && !isFetching) {
-                                    onPageChange(currentPage + 1)
-                                }
-                            }}
-                            className={cn(
-                                currentPage >= (totalPages || 1) || isFetching
-                                    ? 'pointer-events-none opacity-50'
-                                    : 'cursor-pointer',
-                            )}
-                            aria-label="Next page"
-                        />
-                    </PaginationItem>
+          <PaginationItem>
+            <PaginationNext
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                if (currentPage < (totalPages || 1) && !isFetching) {
+                  onPageChange(currentPage + 1)
+                }
+              }}
+              className={cn(
+                currentPage >= (totalPages || 1) || isFetching
+                  ? 'pointer-events-none opacity-50'
+                  : 'cursor-pointer',
+              )}
+              aria-label="Next page"
+            />
+          </PaginationItem>
 
-                    <PaginationItem>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                                if (canGoLast && !isFetching) {
-                                    onPageChange(totalPages || 1)
-                                }
-                            }}
-                            disabled={!canGoLast || isFetching}
-                            className="h-9 w-9"
-                            aria-label="Last page"
-                        >
-                            <ChevronLast className="h-4 w-4" />
-                        </Button>
-                    </PaginationItem>
-                </PaginationContent>
-            </Pagination>
-        </div>
-    )
+          <PaginationItem>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                if (canGoLast && !isFetching) {
+                  onPageChange(totalPages || 1)
+                }
+              }}
+              disabled={!canGoLast || isFetching}
+              className="h-9 w-9"
+              aria-label="Last page"
+            >
+              <ChevronLast className="h-4 w-4" />
+            </Button>
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>
+  )
 }

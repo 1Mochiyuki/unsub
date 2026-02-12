@@ -1,32 +1,35 @@
 import { v } from 'convex/values'
-import { action, internalMutation, query } from './_generated/server'
-import { api, internal } from './_generated/api'
+import { action, internalMutation } from './_generated/server'
+import { internal } from './_generated/api'
 import { auth } from './auth'
-import { encrypt, decrypt } from '../src/lib/encryption.node'
+import { decrypt, encrypt } from './utils/encryption'
+import { requireAuth } from './utils/auth'
+import { handleApiError } from './utils/api'
+import { AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, ENCRYPTION_KEY } from './config'
+import type { ActionCtx, MutationCtx } from './_generated/server'
+import type { Id } from './_generated/dataModel'
 
 const YOUTUBE_API_BASE = 'https://www.googleapis.com/youtube/v3'
 const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token'
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
 
 export const updateUserTokens = internalMutation({
   args: {
     userId: v.id('users'),
     access_token: v.string(),
     expires_at: v.number(),
+    refresh_token: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    if (!ENCRYPTION_KEY) {
-      throw new Error('Encryption key not configured')
-    }
-    const encryptedToken = encrypt(args.access_token, ENCRYPTION_KEY)
+    // Tokens must be pre-encrypted by the calling action
     await ctx.db.patch(args.userId, {
-      access_token: encryptedToken,
+      access_token: args.access_token,
       expires_at: args.expires_at,
+      ...(args.refresh_token && { refresh_token: args.refresh_token }),
     })
   },
 })
 
-async function checkRateLimit(ctx: any, key: string) {
+async function checkRateLimit(ctx: ActionCtx | MutationCtx, key: string) {
   const result = await ctx.runMutation(
     internal.rate_limit.checkAndIncrementRateLimit,
     {
@@ -38,20 +41,17 @@ async function checkRateLimit(ctx: any, key: string) {
 
   if (!result.allowed) {
     throw new Error(
-      `Rate limit exceeded. Try again in ${Math.ceil(result.retryAfter / 1000)}s`,
+      `Rate limit exceeded. Try again in ${Math.ceil((result.retryAfter ?? 0) / 1000)}s`,
     )
   }
 }
 
 async function refreshAccessToken(
-  ctx: any,
-  userId: any,
+  ctx: ActionCtx,
+  userId: Id<'users'>,
   refreshToken: string,
 ): Promise<string> {
-  const clientId = process.env.AUTH_GOOGLE_ID
-  const clientSecret = process.env.AUTH_GOOGLE_SECRET
-
-  if (!clientId || !clientSecret) {
+  if (!AUTH_GOOGLE_ID || !AUTH_GOOGLE_SECRET) {
     throw new Error('Configuration error')
   }
 
@@ -61,16 +61,15 @@ async function refreshAccessToken(
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
+      client_id: AUTH_GOOGLE_ID,
+      client_secret: AUTH_GOOGLE_SECRET,
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
     }),
   })
 
   if (!response.ok) {
-    console.error('Token refresh failed', await response.text())
-    throw new Error('Authentication failed')
+    await handleApiError(response, 'Token refresh')
   }
 
   const tokens = await response.json()
@@ -78,20 +77,26 @@ async function refreshAccessToken(
   const expiresIn = tokens.expires_in
   const newExpiresAt = Date.now() + expiresIn * 1000
 
+  if (!ENCRYPTION_KEY) {
+    throw new Error('Encryption key not configured')
+  }
+  const encryptedToken = await encrypt(newAccessToken, ENCRYPTION_KEY)
+  const encryptedRefreshToken = tokens.refresh_token
+    ? await encrypt(tokens.refresh_token, ENCRYPTION_KEY)
+    : undefined
+
   await ctx.runMutation(internal.youtube.updateUserTokens, {
     userId,
-    access_token: newAccessToken,
+    access_token: encryptedToken,
     expires_at: newExpiresAt,
+    refresh_token: encryptedRefreshToken,
   })
 
   return newAccessToken
 }
 
-async function getValidAccessToken(ctx: any): Promise<string> {
-  const userId = await auth.getUserId(ctx)
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
+async function getValidAccessToken(ctx: ActionCtx): Promise<string> {
+  const userId = await requireAuth(ctx)
 
   const user = await ctx.runQuery(internal.users.getUserSecrets, { userId })
 
@@ -105,12 +110,13 @@ async function getValidAccessToken(ctx: any): Promise<string> {
     throw new Error('Encryption key not configured')
   }
 
-  const decryptedToken = decrypt(access_token, ENCRYPTION_KEY)
+  const decryptedToken = await decrypt(access_token, ENCRYPTION_KEY)
 
   const isExpired = expires_at ? Date.now() >= expires_at - 300000 : false
 
   if (isExpired && refresh_token) {
-    return await refreshAccessToken(ctx, userId, refresh_token)
+    const decryptedRefreshToken = await decrypt(refresh_token, ENCRYPTION_KEY)
+    return refreshAccessToken(ctx, userId, decryptedRefreshToken)
   }
 
   if (isExpired && !refresh_token) {
@@ -125,8 +131,7 @@ export const listSubscriptions = action({
     pageToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx)
-    if (!userId) throw new Error('Not authenticated')
+    const userId = await requireAuth(ctx)
 
     await checkRateLimit(ctx, `list:${userId}`)
 
@@ -146,11 +151,10 @@ export const listSubscriptions = action({
     })
 
     if (!response.ok) {
-      console.error('YouTube List Error', await response.text())
-      throw new Error('Failed to fetch subscriptions')
+      await handleApiError(response, 'YouTube List')
     }
 
-    return await response.json()
+    return response.json()
   },
 })
 
@@ -159,8 +163,7 @@ export const unsubscribe = action({
     subscriptionId: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx)
-    if (!userId) throw new Error('Not authenticated')
+    const userId = await requireAuth(ctx)
 
     await checkRateLimit(ctx, `unsub:${userId}`)
 
@@ -178,8 +181,7 @@ export const unsubscribe = action({
     }
 
     if (!response.ok) {
-      console.error('YouTube Unsubscribe Error', await response.text())
-      throw new Error('Failed to unsubscribe')
+      await handleApiError(response, 'YouTube Unsubscribe')
     }
 
     return { success: true }
@@ -191,8 +193,7 @@ export const subscribe = action({
     channelId: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx)
-    if (!userId) throw new Error('Not authenticated')
+    const userId = await requireAuth(ctx)
 
     if (!args.channelId.match(/^UC[\w-]{22}$/)) {
       throw new Error('Invalid channel ID')
@@ -220,15 +221,13 @@ export const subscribe = action({
     })
 
     if (!response.ok) {
-      console.error('YouTube Subscribe Error', await response.text())
-      throw new Error('Failed to subscribe')
+      await handleApiError(response, 'YouTube Subscribe')
     }
 
-    return await response.json()
+    return response.json()
   },
 })
 
-// Revoke Google tokens securely
 export const revokeGoogleToken = action({
   args: {},
   handler: async (ctx) => {
@@ -244,10 +243,10 @@ export const revokeGoogleToken = action({
       if (!user) return
 
       const decryptedToken = user.access_token
-        ? decrypt(user.access_token, ENCRYPTION_KEY)
+        ? await decrypt(user.access_token, ENCRYPTION_KEY)
         : null
       const decryptedRefreshToken = user.refresh_token
-        ? decrypt(user.refresh_token, ENCRYPTION_KEY)
+        ? await decrypt(user.refresh_token, ENCRYPTION_KEY)
         : null
 
       if (decryptedToken) {
