@@ -41,6 +41,7 @@ function HistoryPage() {
 
   const history = useQuery(api.history.getHistory)
   const subscribe = useAction(api.youtube.subscribe)
+  const removeHistoryItem = useMutation(api.history.removeHistoryItem)
   const bulkResubscribeMutation = useMutation(api.history.bulkResubscribe)
   const bulkDeleteMutation = useMutation(api.history.bulkDelete)
 
@@ -183,6 +184,7 @@ function HistoryPage() {
   const handleIndividualResubscribe = async (item: HistoryItem) => {
     try {
       await subscribe({ channelId: item.channelId })
+      await removeHistoryItem({ id: item._id })
       toast.success(`Resubscribed to ${item.channelTitle}`)
     } catch (error) {
       console.error(error)
