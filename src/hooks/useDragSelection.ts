@@ -16,6 +16,7 @@ interface UseDragSelectionReturn {
   isSelecting: boolean
   selectionBox: SelectionBox | null
   handleMouseDown: (e: React.MouseEvent, currentSelection: Set<string>) => void
+  scrollOffset: { x: number; y: number }
 }
 
 export function useDragSelection({
@@ -25,6 +26,7 @@ export function useDragSelection({
 }: UseDragSelectionProps): UseDragSelectionReturn {
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null)
+  const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 0 })
 
   const selectionStartRef = useRef<{
     x: number
@@ -58,7 +60,9 @@ export function useDragSelection({
     const clickedItemId = clickedItem?.getAttribute('data-id') || null
 
     setIsSelecting(true)
-    setSelectionBox({ start, current: start })
+    setSelectionBox({ start: { x: start.x, y: start.y }, current: start })
+    setScrollOffset({ x: window.scrollX, y: window.scrollY })
+
     selectionStartRef.current = {
       x: start.x,
       y: start.y,
@@ -167,9 +171,20 @@ export function useDragSelection({
     }
   }, [isSelecting, itemsRef, contentRef, onSelectionChange])
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollOffset({ x: window.scrollX, y: window.scrollY })
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
   return {
     isSelecting,
     selectionBox,
     handleMouseDown,
+    scrollOffset,
   }
 }

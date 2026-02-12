@@ -11,16 +11,20 @@ interface SelectionBox {
 interface SelectionOverlayProps {
   isVisible: boolean
   selectionBox: SelectionBox | null
+  scrollOffset: { x: number; y: number }
 }
 
 export function SelectionOverlay({
   isVisible,
   selectionBox,
+  scrollOffset,
 }: SelectionOverlayProps) {
   if (!isVisible || !selectionBox) return null
 
-  const left = Math.min(selectionBox.start.x, selectionBox.current.x)
-  const top = Math.min(selectionBox.start.y, selectionBox.current.y)
+  const left =
+    Math.min(selectionBox.start.x, selectionBox.current.x) - scrollOffset.x
+  const top =
+    Math.min(selectionBox.start.y, selectionBox.current.y) - scrollOffset.y
   const width = Math.abs(selectionBox.current.x - selectionBox.start.x)
   const height = Math.abs(selectionBox.current.y - selectionBox.start.y)
 
