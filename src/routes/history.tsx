@@ -126,7 +126,9 @@ function HistoryPage() {
       setConfirmation(null)
     } catch (error) {
       console.error(error)
-      toast.error('Failed to resubscribe')
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to resubscribe'
+      toast.error(errorMessage)
     } finally {
       setIsResubscribing(false)
     }
@@ -138,12 +140,18 @@ function HistoryPage() {
       await bulkDeleteMutation({
         ids: Array.from(selectedIds) as Array<Id<'unsubscribed_history'>>,
       })
-      toast.success(`Removed ${selectedIds.size} history item(s)`)
+      toast.success(
+        `Removed ${selectedIds.size} history item${selectedIds.size > 1 ? 's' : ''}`,
+      )
       clearSelection()
       setConfirmation(null)
     } catch (error) {
       console.error(error)
-      toast.error('Failed to remove history items')
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to remove history items'
+      toast.error(errorMessage)
     } finally {
       setIsDeleting(false)
     }
@@ -182,13 +190,16 @@ function HistoryPage() {
   }, [confirmation])
 
   const handleIndividualResubscribe = async (item: HistoryItem) => {
+    const toastId = toast.loading(`Resubscribing to ${item.channelTitle}...`)
     try {
       await subscribe({ channelId: item.channelId })
       await removeHistoryItem({ id: item._id })
-      toast.success(`Resubscribed to ${item.channelTitle}`)
+      toast.success(`Resubscribed to ${item.channelTitle}`, { id: toastId })
     } catch (error) {
       console.error(error)
-      toast.error('Failed to resubscribe')
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to resubscribe'
+      toast.error(errorMessage, { id: toastId })
     }
   }
 

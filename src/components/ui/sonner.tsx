@@ -5,7 +5,7 @@ import {
   OctagonXIcon,
   TriangleAlertIcon,
 } from 'lucide-react'
-import { useTheme } from 'next-themes'
+import { useTheme } from 'tanstack-theme-kit'
 import { Toaster as Sonner } from 'sonner'
 import type { ToasterProps } from 'sonner'
 

@@ -8,7 +8,9 @@ interface UseUnsubscribeReturn {
   isUnsubscribing: boolean
   confirmation: ConfirmationState | null
   confirmSingleUnsubscribe: (sub: Subscription) => void
-  handleSingleUnsubscribe: () => Promise<void>
+  handleSingleUnsubscribe: (
+    onRemoveSubscription?: (id: string) => void,
+  ) => Promise<void>
   promptBulkUnsubscribe: (selectedIds: Set<string>) => void
   performBulkUnsubscribe: (
     selectedIds: Set<string>,
@@ -36,7 +38,9 @@ export function useUnsubscribe(): UseUnsubscribeReturn {
     })
   }
 
-  const handleSingleUnsubscribe = async () => {
+  const handleSingleUnsubscribe = async (
+    onRemoveSubscription?: (id: string) => void,
+  ) => {
     if (!confirmation || confirmation.type !== 'single' || !confirmation.data) {
       return
     }
@@ -52,10 +56,15 @@ export function useUnsubscribe(): UseUnsubscribeReturn {
         channelTitle: sub.snippet.title,
       })
 
+      onRemoveSubscription?.(sub.id)
       toast.success(`Unsubscribed from ${sub.snippet.title}`, { id: toastId })
     } catch (error) {
       console.error('Failed to unsubscribe:', error)
-      toast.error('Failed to unsubscribe. Please try again.', { id: toastId })
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to unsubscribe. Please try again.'
+      toast.error(errorMessage, { id: toastId })
     } finally {
       setIsUnsubscribing(false)
       setConfirmation(null)
@@ -117,17 +126,21 @@ export function useUnsubscribe(): UseUnsubscribeReturn {
 
       if (failCount === 0) {
         toast.success(
-          `Successfully unsubscribed from ${successCount} channels`,
+          `Successfully unsubscribed from ${successCount} channel${successCount > 1 ? 's' : ''}`,
           { id: toastId },
         )
       } else {
         toast.warning(
-          `Unsubscribed from ${successCount} channels. Failed: ${failCount}`,
+          `Unsubscribed from ${successCount} channel${successCount > 1 ? 's' : ''}. Failed: ${failCount}`,
           { id: toastId },
         )
       }
     } catch (error) {
-      toast.error('An error occurred during bulk unsubscribe', { id: toastId })
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'An error occurred during bulk unsubscribe'
+      toast.error(errorMessage, { id: toastId })
     } finally {
       setIsUnsubscribing(false)
       setConfirmation(null)

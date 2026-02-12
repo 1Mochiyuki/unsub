@@ -113,7 +113,7 @@ function DashboardPage() {
         clearSelection,
       )
     } else {
-      await handleSingleUnsubscribe()
+      await handleSingleUnsubscribe(removeSubscription)
     }
   }
 
