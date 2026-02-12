@@ -1,5 +1,11 @@
 import { v } from 'convex/values'
-import { internalQuery, query } from './_generated/server'
+import {
+  action,
+  internalMutation,
+  internalQuery,
+  query,
+} from './_generated/server'
+import { internal } from './_generated/api'
 import { auth } from './auth'
 
 export const getMe = query({
@@ -31,6 +37,59 @@ export const getUserSecrets = internalQuery({
       access_token: user.access_token,
       refresh_token: user.refresh_token,
       expires_at: user.expires_at,
+    }
+  },
+})
+
+export const deleteUserData = internalMutation({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const userId = args.userId
+
+    const history = await ctx.db
+      .query('unsubscribed_history')
+      .withIndex('by_user_id', (q) => q.eq('userId', userId))
+      .collect()
+
+    for (const item of history) {
+      await ctx.db.delete(item._id)
+    }
+
+    const rateLimitKeys = [`list:${userId}`, `sub:${userId}`, `unsub:${userId}`]
+    for (const key of rateLimitKeys) {
+      const rateLimit = await ctx.db
+        .query('rate_limits')
+        .withIndex('by_key', (q) => q.eq('key', key))
+        .unique()
+      if (rateLimit) {
+        await ctx.db.delete(rateLimit._id)
+      }
+    }
+
+    await ctx.db.delete(userId)
+  },
+})
+
+export const deleteAccount = action({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx)
+    if (!userId) {
+      throw new Error('Unauthorized')
+    }
+
+    const secrets = await ctx.runQuery(internal.users.getUserSecrets, {
+      userId,
+    })
+    if (!secrets) {
+      throw new Error('User secrets not found')
+    }
+
+    try {
+      await ctx.runMutation(internal.users.deleteUserData, { userId })
+    } catch (error) {
+      console.error('Failed to delete user data:', error)
+      throw new Error('Failed to delete account data')
     }
   },
 })
