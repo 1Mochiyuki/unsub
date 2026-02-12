@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,7 +14,7 @@ interface SharedConfirmationDialogProps {
   open: boolean
   title: string
   description: string
-  confirmLabel?: string
+  confirmLabel?: ReactNode
   cancelLabel?: string
   isProcessing: boolean
   onConfirm: () => void
