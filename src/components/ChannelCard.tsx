@@ -25,17 +25,21 @@ export interface Channel {
   }
 }
 
+type SelectionState = 'default' | 'selected'
+
 interface ChannelCardProps {
   channel: Channel
-  isSelected: boolean
+  selectionState?: SelectionState
   onToggleSelect: () => void
+  onShiftClick?: () => void
   onUnsubscribe: () => void
 }
 
 export function ChannelCard({
   channel,
-  isSelected,
+  selectionState = 'default',
   onToggleSelect,
+  onShiftClick,
   onUnsubscribe,
 }: ChannelCardProps) {
   const title = channel.snippet.title
@@ -50,18 +54,22 @@ export function ChannelCard({
   return (
     <div
       onClick={(e) => {
-        // Prevent click if clicking the unsubscribe button
         if ((e.target as HTMLElement).closest('button')) {
           return
         }
-        onToggleSelect()
+        if (e.shiftKey && onShiftClick) {
+          e.stopPropagation()
+          onShiftClick()
+        } else {
+          onToggleSelect()
+        }
       }}
       className={cn(
         'group relative flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition-all duration-200',
-        isSelected
-          ? 'bg-primary/5 border-primary shadow-[0_0_15px_rgba(var(--primary),0.15)]'
-          : 'bg-card border-border hover:border-primary/50 hover:bg-card/80',
+        'bg-card border-border hover:border-primary/50 hover:bg-card/80',
+        'data-[state=selected]:bg-primary/5 data-[state=selected]:border-primary data-[state=selected]:shadow-[0_0_15px_rgba(var(--primary),0.15)]',
       )}
+      data-state={selectionState}
     >
       <Avatar className="w-14 h-14 border-2 border-border shrink-0">
         <AvatarImage
@@ -78,9 +86,8 @@ export function ChannelCard({
         <h3
           className={cn(
             'font-bold text-base leading-tight truncate transition-colors',
-            isSelected
-              ? 'text-primary'
-              : 'text-foreground group-hover:text-primary/90',
+            'text-foreground group-hover:text-primary/90',
+            'group-data-[state=selected]:text-primary',
           )}
         >
           {title}

@@ -9,7 +9,6 @@ export interface SelectionBox {
 interface UseDragSelectionProps {
   onSelectionChange: (selectedIds: Set<string>) => void
   itemsRef: React.MutableRefObject<Map<string, HTMLDivElement>>
-  contentRef: React.MutableRefObject<HTMLDivElement | null>
 }
 
 interface UseDragSelectionReturn {
@@ -21,7 +20,6 @@ interface UseDragSelectionReturn {
 export function useDragSelection({
   onSelectionChange,
   itemsRef,
-  contentRef,
 }: UseDragSelectionProps): UseDragSelectionReturn {
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null)
@@ -178,7 +176,7 @@ export function useDragSelection({
             } else if (start.mode === 'REPLACE') {
               onSelectionChange(new Set([start.clickedItemId]))
             }
-          } else if (start.mode === 'REPLACE') {
+          } else {
             // Clicked empty space
             onSelectionChange(new Set())
           }
@@ -199,7 +197,7 @@ export function useDragSelection({
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isSelecting, itemsRef, contentRef, onSelectionChange])
+  }, [isSelecting, onSelectionChange])
 
   return {
     isSelecting,

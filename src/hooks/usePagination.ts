@@ -3,7 +3,6 @@ import { useState } from 'react'
 interface UsePaginationProps {
   initialPage: number
   initialPageSize: number
-  pageSizeOptions: Array<number>
 }
 
 interface UsePaginationReturn {
@@ -40,7 +39,6 @@ export function usePagination({
     currentPage < totalPagesCount
 
   const handleSetPageSize = (size: number) => {
-    if (!pageSizeOptions.includes(size)) return
     setPageSize(size)
     setCurrentPage(1)
   }

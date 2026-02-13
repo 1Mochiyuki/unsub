@@ -9,6 +9,7 @@ interface SharedSearchBarProps {
   selectedCount: number
   filteredCount: number
   onSelectAll: () => void
+  onDeselectAll: () => void
   onBulkAction?: () => void
   isProcessing?: boolean
   isLoading: boolean
@@ -23,6 +24,7 @@ export function SharedSearchBar({
   selectedCount,
   filteredCount,
   onSelectAll,
+  onDeselectAll,
   onBulkAction,
   isProcessing,
   isLoading,
@@ -31,7 +33,6 @@ export function SharedSearchBar({
   actions,
 }: SharedSearchBarProps) {
   const showSelectedCount = selectedCount > 0
-  const isAllSelected = selectedCount === filteredCount && filteredCount > 0
   const hasSelection = selectedCount > 0
 
   return (
@@ -62,8 +63,18 @@ export function SharedSearchBar({
           disabled={isLoading || filteredCount === 0}
           className="flex-1 md:flex-none text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl"
         >
-          {isAllSelected ? 'Deselect All' : 'Select All'}
+          Select All
         </Button>
+        {hasSelection && (
+          <Button
+            variant="ghost"
+            onClick={onDeselectAll}
+            disabled={isLoading}
+            className="flex-1 md:flex-none text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
+          >
+            Deselect All
+          </Button>
+        )}
         {actions ? (
           actions
         ) : (

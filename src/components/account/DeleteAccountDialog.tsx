@@ -4,7 +4,7 @@ import { useAuthActions } from '@convex-dev/auth/react'
 import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
-import { SharedConfirmationDialog } from '../shared/SharedConfirmationDialog'
+import { ConfirmationDialog } from '../shared/SharedConfirmationDialog'
 
 interface DeleteAccountDialogProps {
   open: boolean
@@ -34,21 +34,24 @@ export function DeleteAccountDialog({
   }
 
   return (
-    <SharedConfirmationDialog
-      open={open}
-      onDismiss={() => onOpenChange(false)}
-      onConfirm={handleConfirm}
-      title="Delete Account"
-      description="This action cannot be undone. This will permanently delete your account and remove all your data from our servers."
-      confirmLabel={
-        <span className="flex items-center">
-          <Trash2 className="w-4 h-4 mr-2" />
-          Delete Account
-        </span>
-      }
-      cancelLabel="Cancel"
-      isProcessing={isDeleting}
-      variant="destructive"
-    />
+    <ConfirmationDialog open={open} onOpenChange={onOpenChange}>
+      <ConfirmationDialog.Header
+        title="Delete Account"
+        description="This action cannot be undone. This will permanently delete your account and remove all your data from our servers."
+      />
+      <ConfirmationDialog.Footer
+        variant="destructive"
+        isProcessing={isDeleting}
+        onConfirm={handleConfirm}
+        onDismiss={() => onOpenChange(false)}
+        cancelLabel="Cancel"
+        confirmLabel={
+          <span className="flex items-center">
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Account
+          </span>
+        }
+      />
+    </ConfirmationDialog>
   )
 }

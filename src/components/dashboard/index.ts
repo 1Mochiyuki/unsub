@@ -1,5 +1,4 @@
 export { DashboardPagination } from './DashboardPagination'
 export { DashboardSearchBar } from './DashboardSearchBar'
-export { UnsubscribeDialog } from './UnsubscribeDialog'
 export { EmptyState } from './EmptyState'
 export { LoadingState } from './LoadingState'

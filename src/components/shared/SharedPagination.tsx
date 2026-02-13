@@ -21,13 +21,13 @@ import {
 interface SharedPaginationProps {
   currentPage: number
   pageSize: number
-  pageSizeOptions: Array<number>
+  pageSizeOptions: Array<number | 'all'>
   totalPages: number
   filteredCount: number
   totalCount?: number | null
   isFetching: boolean
   onPageChange: (page: number) => void
-  onPageSizeChange: (size: number) => void
+  onPageSizeChange: (size: number | 'all') => void
   onPrefetchNext?: () => void
   onCancelPrefetch?: () => void
   unitLabel?: string
@@ -92,20 +92,28 @@ export function SharedPagination({
             ` (total: ${totalCount})`}
         </span>
         <Select
-          value={pageSize.toString()}
-          onValueChange={(value) => onPageSizeChange(Number(value))}
+          value={pageSize === Infinity ? 'all' : pageSize.toString()}
+          onValueChange={(value) =>
+            onPageSizeChange(value === 'all' ? 'all' : Number(value))
+          }
         >
           <SelectTrigger className="w-32.5 bg-background border focus:ring-primary/30 text-muted-foreground">
-            <SelectValue placeholder={pageSizeOptions[0]?.toString()} />
+            <SelectValue
+              placeholder={
+                pageSize === Infinity
+                  ? 'Show All'
+                  : (pageSizeOptions[0] as number)?.toString()
+              }
+            />
           </SelectTrigger>
           <SelectContent className="bg-background border">
             {pageSizeOptions.map((size) => (
               <SelectItem
                 key={size}
-                value={size.toString()}
+                value={size === 'all' ? 'all' : size.toString()}
                 className="text-foreground hover:bg-muted"
               >
-                {size} / page
+                {size === 'all' ? 'Show All' : `${size} / page`}
               </SelectItem>
             ))}
           </SelectContent>

@@ -10,49 +10,75 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-interface SharedConfirmationDialogProps {
+interface ConfirmationDialogProps {
   open: boolean
-  title: string
-  description: string
-  confirmLabel?: ReactNode
-  cancelLabel?: string
-  isProcessing: boolean
-  onConfirm: () => void
-  onDismiss: () => void
-  variant?: 'destructive' | 'default'
+  onOpenChange: (open: boolean) => void
+  children: ReactNode
 }
 
-export function SharedConfirmationDialog({
+interface HeaderProps {
+  title: string | ReactNode
+  description: string | ReactNode
+}
+
+interface FooterProps {
+  confirmLabel?: ReactNode
+  cancelLabel?: string
+  variant?: 'destructive' | 'default'
+  isProcessing?: boolean
+  onConfirm: () => void
+  onDismiss: () => void
+}
+
+export function ConfirmationDialog({
   open,
-  title,
-  description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
-  isProcessing,
-  onConfirm,
-  onDismiss,
-  variant = 'destructive',
-}: SharedConfirmationDialogProps) {
+  onOpenChange,
+  children,
+}: ConfirmationDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onDismiss()}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-background border text-foreground">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onDismiss}>
-            {cancelLabel}
-          </Button>
-          <Button variant={variant} onClick={onConfirm} disabled={isProcessing}>
-            {isProcessing ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              confirmLabel
-            )}
-          </Button>
-        </DialogFooter>
+        {children}
       </DialogContent>
     </Dialog>
   )
 }
+
+ConfirmationDialog.Header = function Header({
+  title,
+  description,
+}: HeaderProps) {
+  return (
+    <DialogHeader>
+      <DialogTitle>{title}</DialogTitle>
+      <DialogDescription>{description}</DialogDescription>
+    </DialogHeader>
+  )
+}
+
+ConfirmationDialog.Footer = function Footer({
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  variant = 'default',
+  isProcessing = false,
+  onConfirm,
+  onDismiss,
+}: FooterProps) {
+  return (
+    <DialogFooter>
+      <Button variant="ghost" onClick={onDismiss}>
+        {cancelLabel}
+      </Button>
+      <Button variant={variant} onClick={onConfirm} disabled={isProcessing}>
+        {isProcessing ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          confirmLabel
+        )}
+      </Button>
+    </DialogFooter>
+  )
+}
+
+// Legacy export for backward compatibility
+export { ConfirmationDialog as SharedConfirmationDialog }

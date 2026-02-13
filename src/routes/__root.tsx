@@ -2,8 +2,8 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { ThemeProvider } from 'tanstack-theme-kit'
 import Header from '../components/Header'
 import { Footer } from '../components/Footer'
-import { Toaster } from '@/components/ui/sonner'
 import appCss from '../styles.css?url'
+import { Toaster } from '@/components/ui/sonner'
 import ConvexProvider from '@/integrations/convex/provider'
 
 export const Route = createRootRoute({
