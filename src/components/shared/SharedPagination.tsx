@@ -84,9 +84,18 @@ export function SharedPagination({
     >
       <div className="flex items-center gap-4">
         <span className="text-sm text-muted-foreground">
-          Showing {Math.min((currentPage - 1) * pageSize + 1, filteredCount)} -{' '}
-          {Math.min(currentPage * pageSize, filteredCount)} of {filteredCount}{' '}
-          {label}
+          {pageSize === Infinity ? (
+            <>
+              Showing 1 - {filteredCount} of {filteredCount} {label}
+            </>
+          ) : (
+            <>
+              Showing{' '}
+              {Math.min((currentPage - 1) * pageSize + 1, filteredCount)} -{' '}
+              {Math.min(currentPage * pageSize, filteredCount)} of{' '}
+              {filteredCount} {label}
+            </>
+          )}
           {totalCount &&
             totalCount > filteredCount &&
             ` (total: ${totalCount})`}

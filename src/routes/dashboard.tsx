@@ -17,7 +17,6 @@ import { SharedPagination } from '@/components/shared/SharedPagination'
 import { SharedSearchBar } from '@/components/shared/SharedSearchBar'
 import { ViewToggle } from '@/components/shared/ViewToggle'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 
 const PAGE_SIZE_OPTIONS: Array<number | 'all'> = [50, 100, 200, 'all']
 const SHOW_ALL_PAGE_SIZE = Infinity
@@ -75,6 +74,9 @@ function DashboardPage() {
   })
 
   const paginatedSubscriptions = useMemo(() => {
+    if (pageSize === Infinity) {
+      return filteredSubscriptions
+    }
     const startIndex = (currentPage - 1) * pageSize
     const endIndex = startIndex + pageSize
     return filteredSubscriptions.slice(startIndex, endIndex)
@@ -92,13 +94,16 @@ function DashboardPage() {
 
   const itemsRef = useRef<Map<string, HTMLDivElement>>(new Map())
 
-  const parentRef = useRef<HTMLDivElement>(null)
+  const useVirtualization = viewMode === 'list' && pageSize === Infinity
 
   const rowVirtualizer = useVirtualizer({
-    count: paginatedSubscriptions.length,
-    getScrollElement: () => parentRef.current,
+    count: useVirtualization ? paginatedSubscriptions.length : 0,
+    getScrollElement: useVirtualization
+      ? () => document.documentElement
+      : () => null,
     estimateSize: () => 115,
-    overscan: 5,
+    overscan: useVirtualization ? 10 : 0,
+    enabled: useVirtualization,
   })
 
   const { isSelecting, selectionBox, handleMouseDown } = useDragSelection({
@@ -164,13 +169,17 @@ function DashboardPage() {
     clearSelection()
   }, [clearSelection])
 
-  const handlePageSizeChange = useCallback(async (size: number | 'all') => {
-    if (size === 'all') {
-      setPageSize(SHOW_ALL_PAGE_SIZE)
-    } else {
-      setPageSize(size)
-    }
-  }, [])
+  const handlePageSizeChange = useCallback(
+    async (size: number | 'all') => {
+      if (size === 'all') {
+        setPageSize(SHOW_ALL_PAGE_SIZE)
+        setCurrentPage(1)
+      } else {
+        setPageSize(size)
+      }
+    },
+    [setCurrentPage],
+  )
 
   return (
     <>
@@ -238,51 +247,71 @@ function DashboardPage() {
                 searchQuery={searchQuery}
                 onClearSearch={() => setSearchQuery('')}
               />
+            ) : viewMode === 'list' && pageSize === Infinity ? (
+              <div className="pb-20 select-none relative">
+                <div style={{ height: rowVirtualizer.getTotalSize() }}>
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const sub = paginatedSubscriptions[virtualRow.index]
+                    return (
+                      <div
+                        key={sub.id}
+                        data-selection-item
+                        data-id={sub.id}
+                        data-index={virtualRow.index}
+                        ref={(el) => {
+                          if (el) itemsRef.current.set(sub.id, el)
+                          else itemsRef.current.delete(sub.id)
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: `${virtualRow.start}px`,
+                          left: 0,
+                          width: '100%',
+                        }}
+                      >
+                        <ChannelCard
+                          channel={sub}
+                          viewMode={viewMode}
+                          selectionState={
+                            selectedIds.has(sub.id) ? 'selected' : 'default'
+                          }
+                          onToggleSelect={() => toggleSelection(sub.id)}
+                          onUnsubscribe={() => confirmSingleUnsubscribe(sub)}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             ) : viewMode === 'list' ? (
               <div
-                ref={parentRef}
-                className="pb-20 select-none flex flex-col gap-16"
+                className="pb-20 select-none flex flex-col gap-5"
                 style={{
-                  contentVisibility: 'auto',
-                  height: 'calc(100vh - 400px)',
-                  minHeight: '600px',
-                  overflow: 'auto',
-                  contain: 'layout style paint',
+                  minHeight: 'calc(100vh - 300px)',
                 }}
               >
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const sub = paginatedSubscriptions[virtualRow.index]
-                  return (
-                    <div
-                      key={sub.id}
-                      data-selection-item
-                      data-id={sub.id}
-                      data-index={virtualRow.index}
-                      ref={(el) => {
-                        if (el) itemsRef.current.set(sub.id, el)
-                        else itemsRef.current.delete(sub.id)
-                      }}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: `${virtualRow.size}px`,
-                        transform: `translateY(${virtualRow.start}px)`,
-                      }}
-                    >
-                      <ChannelCard
-                        channel={sub}
-                        viewMode={viewMode}
-                        selectionState={
-                          selectedIds.has(sub.id) ? 'selected' : 'default'
-                        }
-                        onToggleSelect={() => toggleSelection(sub.id)}
-                        onUnsubscribe={() => confirmSingleUnsubscribe(sub)}
-                      />
-                    </div>
-                  )
-                })}
+                {paginatedSubscriptions.map((sub, index) => (
+                  <div
+                    key={sub.id}
+                    data-selection-item
+                    data-id={sub.id}
+                    data-index={index}
+                    ref={(el) => {
+                      if (el) itemsRef.current.set(sub.id, el)
+                      else itemsRef.current.delete(sub.id)
+                    }}
+                  >
+                    <ChannelCard
+                      channel={sub}
+                      viewMode={viewMode}
+                      selectionState={
+                        selectedIds.has(sub.id) ? 'selected' : 'default'
+                      }
+                      onToggleSelect={() => toggleSelection(sub.id)}
+                      onUnsubscribe={() => confirmSingleUnsubscribe(sub)}
+                    />
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20 select-none">
