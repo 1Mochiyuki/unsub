@@ -10,11 +10,11 @@ import { nitro } from 'nitro/vite'
 
 const config = defineConfig({
   plugins: [
-    devtools(),
-    nitro(),
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],
     }),
+    devtools(),
+    nitro(),
     tailwindcss(),
     tanstackStart(),
     viteReact({
