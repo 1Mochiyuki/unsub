@@ -29,8 +29,8 @@ export function useDragSelection({
     y: number
     offset: { left: number; top: number }
     initialSelection: Set<string>
-    mode: SelectionMode
     clickedItemId: string | null
+    lastDragSelection: Set<string>
   } | null>(null)
 
   const handleMouseDown = (
@@ -60,7 +60,6 @@ export function useDragSelection({
       x: e.pageX - offset.left,
       y: e.pageY - offset.top,
     }
-    const mode = e.ctrlKey || e.metaKey ? 'TOGGLE' : 'REPLACE'
 
     const clickedItem = target.closest('[data-selection-item]')
     const clickedItemId = clickedItem?.getAttribute('data-id') || null
@@ -76,12 +75,8 @@ export function useDragSelection({
       y: e.pageY,
       offset,
       initialSelection: new Set(currentSelection),
-      mode,
       clickedItemId,
-    }
-
-    if (mode === 'REPLACE') {
-      onSelectionChange(new Set())
+      lastDragSelection: new Set(currentSelection),
     }
   }
 
@@ -124,9 +119,7 @@ export function useDragSelection({
         bottom: Math.max(startViewport.y, currentViewport.y),
       }
 
-      const newSelection = new Set(
-        start.mode === 'TOGGLE' ? start.initialSelection : [],
-      )
+      const newSelection = new Set(start.initialSelection)
 
       itemsRef.current.forEach((el, id) => {
         const rect = el.getBoundingClientRect() // Returns viewport coordinates
@@ -139,19 +132,16 @@ export function useDragSelection({
         )
 
         if (isIntersecting) {
-          if (start.mode === 'TOGGLE') {
-            if (start.initialSelection.has(id)) {
-              newSelection.delete(id)
-            } else {
-              newSelection.add(id)
-            }
-          } else {
-            newSelection.add(id)
-          }
+          newSelection.add(id)
         }
       })
 
       onSelectionChange(newSelection)
+
+      // Track the drag selection for toggle logic on mouseup
+      if (selectionStartRef.current) {
+        selectionStartRef.current.lastDragSelection = newSelection
+      }
     }
 
     const handleMouseUp = (e: MouseEvent) => {
@@ -165,20 +155,17 @@ export function useDragSelection({
 
         if (dist < 5) {
           if (start.clickedItemId) {
-            if (start.mode === 'TOGGLE') {
-              const newSelection = new Set(start.initialSelection)
-              if (newSelection.has(start.clickedItemId)) {
-                newSelection.delete(start.clickedItemId)
-              } else {
-                newSelection.add(start.clickedItemId)
-              }
-              onSelectionChange(newSelection)
-            } else if (start.mode === 'REPLACE') {
-              onSelectionChange(new Set([start.clickedItemId]))
+            // Toggle selection based on the INITIAL selection state (when mouse went down)
+            const newSelection = new Set(start.initialSelection)
+            if (newSelection.has(start.clickedItemId)) {
+              newSelection.delete(start.clickedItemId)
+            } else {
+              newSelection.add(start.clickedItemId)
             }
+            onSelectionChange(newSelection)
           } else {
-            // Clicked empty space
-            onSelectionChange(new Set())
+            // Clicked empty space - clear selection
+            onSelectionChange(new Set<string>())
           }
         }
       }
