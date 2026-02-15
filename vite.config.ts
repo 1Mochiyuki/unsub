@@ -23,6 +23,11 @@ const config = defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      external: ['@tanstack/react-virtual'],
+    },
+  },
 })
 
 export default config
