@@ -23,6 +23,7 @@ interface UseSubscriptionsReturn {
   ) => void
   cancelPrefetch: () => void
   removeSubscription: (id: string) => void
+  rollbackSubscription: (subscription: any) => void
 }
 
 export function useSubscriptions({
@@ -40,6 +41,11 @@ export function useSubscriptions({
   const isFetchingRef = useRef(false)
   const subscriptionsLengthRef = useRef(subscriptions.length)
   const totalResultsRef = useRef(totalResults)
+  const listSubscriptionsRef = useRef(listSubscriptions)
+
+  useEffect(() => {
+    listSubscriptionsRef.current = listSubscriptions
+  }, [listSubscriptions])
 
   useEffect(() => {
     subscriptionsLengthRef.current = subscriptions.length
@@ -73,7 +79,7 @@ export function useSubscriptions({
         }
 
         while (subscriptionsLengthRef.current < endIndex) {
-          const result = (await listSubscriptions({
+          const result = (await listSubscriptionsRef.current({
             pageToken: currentToken || undefined,
           })) as YouTubeSubscriptionsResponse
 
@@ -106,7 +112,7 @@ export function useSubscriptions({
         }
       }
     },
-    [listSubscriptions],
+    [],
   )
 
   const prefetchPage = useCallback(
@@ -138,6 +144,10 @@ export function useSubscriptions({
     setSubscriptions((prev) => prev.filter((s) => s.id !== id))
   }, [])
 
+  const rollbackSubscription = useCallback((subscription: any) => {
+    setSubscriptions((prev) => [...prev, subscription])
+  }, [])
+
   useEffect(() => {
     fetchPage(1, initialPageSize)
   }, [fetchPage, initialPageSize])
@@ -152,5 +162,6 @@ export function useSubscriptions({
     prefetchPage,
     cancelPrefetch,
     removeSubscription,
+    rollbackSubscription,
   }
 }

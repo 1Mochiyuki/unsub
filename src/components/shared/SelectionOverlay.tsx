@@ -1,9 +1,9 @@
-interface Point {
+export interface Point {
   x: number
   y: number
 }
 
-interface SelectionBox {
+export interface SelectionBox {
   start: Point
   current: Point
 }

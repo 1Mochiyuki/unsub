@@ -3,10 +3,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 export function LoadingState() {
   return (
     <div className="flex flex-col gap-3">
-      {Array.from({ length: 5 }).map((_, i) => (
+      {Array.from({ length: 10 }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-4 p-4 border rounded-2xl bg-card"
+          className="flex items-center gap-4 p-4 border rounded-2xl bg-card animate-in fade-in slide-in-from-bottom-2"
+          style={{ animationDelay: `${i * 30}ms`, animationDuration: '400ms' }}
         >
           <Skeleton className="w-14 h-14 rounded-full shrink-0" />
           <div className="flex-1 space-y-2 py-1">

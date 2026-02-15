@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useAction, useConvexAuth, useQuery } from 'convex/react'
 import { useAuthActions } from '@convex-dev/auth/react'
@@ -19,7 +19,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ModeToggle } from '@/components/ModeToggle'
-import { DeleteAccountDialog } from '@/components/account/DeleteAccountDialog'
+
+const DeleteAccountDialog = lazy(() =>
+  import('@/components/account/DeleteAccountDialog').then((m) => ({
+    default: m.DeleteAccountDialog,
+  })),
+)
 
 export default function Header() {
   const { isAuthenticated, isLoading } = useConvexAuth()
@@ -46,12 +51,16 @@ export default function Header() {
           <NavigationMenuList>
             <NavigationMenuItem>
               <NavigationMenuLink asChild>
-                <Link to="/dashboard">Dashboard</Link>
+                <Link to="/dashboard" preload="intent">
+                  Dashboard
+                </Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
               <NavigationMenuLink asChild>
-                <Link to="/history">History</Link>
+                <Link to="/history" preload="intent">
+                  History
+                </Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
           </NavigationMenuList>
@@ -94,10 +103,12 @@ export default function Header() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <DeleteAccountDialog
-              open={deleteDialogOpen}
-              onOpenChange={setDeleteDialogOpen}
-            />
+            <Suspense fallback={null}>
+              <DeleteAccountDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+              />
+            </Suspense>
           </>
         ) : (
           !isLoading && (

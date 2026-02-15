@@ -10,12 +10,14 @@ interface UseUnsubscribeReturn {
   confirmSingleUnsubscribe: (sub: Subscription) => void
   handleSingleUnsubscribe: (
     onRemoveSubscription?: (id: string) => void,
+    onRollbackSubscription?: (subscription: Subscription) => void,
   ) => Promise<void>
   promptBulkUnsubscribe: (selectedIds: Set<string>) => void
   performBulkUnsubscribe: (
     selectedIds: Set<string>,
     allSubscriptions: Array<Subscription>,
     onRemoveSubscription: (id: string) => void,
+    onRollbackSubscription?: (subscription: Subscription) => void,
     onClearSelection: () => void,
   ) => Promise<void>
   dismissConfirmation: () => void
@@ -40,31 +42,35 @@ export function useUnsubscribe(): UseUnsubscribeReturn {
 
   const handleSingleUnsubscribe = async (
     onRemoveSubscription?: (id: string) => void,
+    onRollbackSubscription?: (subscription: Subscription) => void,
   ) => {
     if (!confirmation || confirmation.type !== 'single' || !confirmation.data) {
       return
     }
 
     const sub = confirmation.data as Subscription
-    setIsUnsubscribing(true)
     const toastId = toast.loading(`Unsubscribing from ${sub.snippet.title}...`)
+
+    onRemoveSubscription?.(sub.id)
+    toast.success(`Unsubscribed from ${sub.snippet.title}`, { id: toastId })
 
     try {
       await unsubscribe({ subscriptionId: sub.id })
       await logUnsubscribe({
         channelId: sub.snippet.resourceId.channelId,
         channelTitle: sub.snippet.title,
+        channelThumbnail:
+          sub.snippet.thumbnails?.medium?.url ||
+          sub.snippet.thumbnails?.default?.url,
       })
-
-      onRemoveSubscription?.(sub.id)
-      toast.success(`Unsubscribed from ${sub.snippet.title}`, { id: toastId })
     } catch (error) {
       console.error('Failed to unsubscribe:', error)
       const errorMessage =
         error instanceof Error
           ? error.message
           : 'Failed to unsubscribe. Please try again.'
-      toast.error(errorMessage, { id: toastId })
+      toast.error(errorMessage)
+      onRollbackSubscription?.(sub)
     } finally {
       setIsUnsubscribing(false)
       setConfirmation(null)
@@ -84,45 +90,66 @@ export function useUnsubscribe(): UseUnsubscribeReturn {
     selectedIds: Set<string>,
     allSubscriptions: Array<Subscription>,
     onRemoveSubscription: (id: string) => void,
+    onRollbackSubscription?: (subscription: Subscription) => void,
     onClearSelection: () => void,
   ) => {
     if (selectedIds.size === 0) return
 
-    setIsUnsubscribing(true)
+    const idsToUnsub = Array.from(selectedIds)
+    const removedSubscriptions = allSubscriptions.filter((s) =>
+      selectedIds.has(s.id),
+    )
     const toastId = toast.loading(
       `Unsubscribing from ${selectedIds.size} channels...`,
     )
 
+    idsToUnsub.forEach((id) => onRemoveSubscription(id))
+    onClearSelection()
+    toast.success(`Unsubscribing from ${selectedIds.size} channels...`, {
+      id: toastId,
+    })
+
+    setIsUnsubscribing(true)
     let successCount = 0
     let failCount = 0
 
-    const idsToUnsub = Array.from(selectedIds)
-    const newSubscriptions = [...allSubscriptions]
-
     try {
-      for (const id of idsToUnsub) {
-        const sub = allSubscriptions.find((s) => s.id === id)
-        if (!sub) continue
+      const BATCH_SIZE = 10
+      for (let i = 0; i < idsToUnsub.length; i += BATCH_SIZE) {
+        const batch = idsToUnsub.slice(i, i + BATCH_SIZE)
+        const batchResults = await Promise.all(
+          batch.map(async (id) => {
+            const sub = allSubscriptions.find((s) => s.id === id)
+            if (!sub) return { success: false }
 
-        try {
-          await unsubscribe({ subscriptionId: id })
-          await logUnsubscribe({
-            channelId: sub.snippet.resourceId.channelId,
-            channelTitle: sub.snippet.title,
-          })
+            try {
+              await unsubscribe({ subscriptionId: id })
+              await logUnsubscribe({
+                channelId: sub.snippet.resourceId.channelId,
+                channelTitle: sub.snippet.title,
+                channelThumbnail:
+                  sub.snippet.thumbnails?.medium?.url ||
+                  sub.snippet.thumbnails?.default?.url,
+              })
+              return { success: true, sub }
+            } catch (err) {
+              console.error(
+                `Failed to unsubscribe from ${sub.snippet.title}`,
+                err,
+              )
+              return { success: false, sub }
+            }
+          }),
+        )
 
-          const index = newSubscriptions.findIndex((s) => s.id === id)
-          if (index !== -1) newSubscriptions.splice(index, 1)
-
-          successCount++
-          onRemoveSubscription(id)
-        } catch (err) {
-          console.error(`Failed to unsubscribe from ${sub.snippet.title}`, err)
-          failCount++
-        }
+        batchResults.forEach((result) => {
+          if (result.success) {
+            successCount++
+          } else {
+            failCount++
+          }
+        })
       }
-
-      onClearSelection()
 
       if (failCount === 0) {
         toast.success(
@@ -141,6 +168,7 @@ export function useUnsubscribe(): UseUnsubscribeReturn {
           ? error.message
           : 'An error occurred during bulk unsubscribe'
       toast.error(errorMessage, { id: toastId })
+      removedSubscriptions.forEach((sub) => onRollbackSubscription?.(sub))
     } finally {
       setIsUnsubscribing(false)
       setConfirmation(null)

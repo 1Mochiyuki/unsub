@@ -58,7 +58,9 @@ function IndexPage() {
               size="lg"
               className="font-bold text-lg h-14 px-8 rounded-full shadow-lg hover:shadow-primary/20 transition-all"
             >
-              <Link to="/dashboard">Go to Dashboard</Link>
+              <Link to="/dashboard" preload="intent">
+                Go to Dashboard
+              </Link>
             </Button>
           </Authenticated>
           <Unauthenticated>

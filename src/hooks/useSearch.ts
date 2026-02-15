@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { useDebounce } from './useDebounce'
 
 interface UseSearchProps<T> {
   items: Array<T>
@@ -11,11 +12,13 @@ export function useSearch<T>({
   searchQuery,
   searchFn,
 }: UseSearchProps<T>): Array<T> {
+  const debouncedQuery = useDebounce(searchQuery, 300)
+
   const filteredItems = useMemo(() => {
-    if (!searchQuery) return items
-    const query = searchQuery.toLowerCase()
+    if (!debouncedQuery) return items
+    const query = debouncedQuery.toLowerCase()
     return items.filter((item) => searchFn(item, query))
-  }, [items, searchQuery, searchFn])
+  }, [items, debouncedQuery, searchFn])
 
   return filteredItems
 }

@@ -18,9 +18,7 @@
   ],
   "overrides": [
     {
-      "files": [
-        "**/*.{js,ts,tsx}"
-      ],
+      "files": ["**/*.{js,ts,tsx}"],
       "rules": {
         "for-direction": "error",
         "no-async-promise-executor": "error",
@@ -106,18 +104,13 @@
         "@typescript-eslint/prefer-as-const": "error",
         "@typescript-eslint/prefer-for-of": "warn",
         "@typescript-eslint/triple-slash-reference": "error",
-        "import/consistent-type-specifier-style": [
-          "error",
-          "prefer-top-level"
-        ],
+        "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
         "import/first": "error",
         "import/no-commonjs": "error",
         "import/no-duplicates": "error",
         "@stylistic/spaced-comment": "error"
       },
-      "jsPlugins": [
-        "@stylistic/eslint-plugin"
-      ],
+      "jsPlugins": ["@stylistic/eslint-plugin"],
       "globals": {
         "AudioWorkletGlobalScope": "readonly",
         "AudioWorkletProcessor": "readonly",
@@ -131,15 +124,10 @@
         "es2020": true,
         "browser": true
       },
-      "plugins": [
-        "typescript",
-        "import"
-      ]
+      "plugins": ["typescript", "import"]
     },
     {
-      "files": [
-        "**/*.vue"
-      ],
+      "files": ["**/*.vue"],
       "rules": {
         "for-direction": "error",
         "no-async-promise-executor": "error",
@@ -225,18 +213,13 @@
         "@typescript-eslint/prefer-as-const": "error",
         "@typescript-eslint/prefer-for-of": "warn",
         "@typescript-eslint/triple-slash-reference": "error",
-        "import/consistent-type-specifier-style": [
-          "error",
-          "prefer-top-level"
-        ],
+        "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
         "import/first": "error",
         "import/no-commonjs": "error",
         "import/no-duplicates": "error",
         "@stylistic/spaced-comment": "error"
       },
-      "jsPlugins": [
-        "@stylistic/eslint-plugin"
-      ],
+      "jsPlugins": ["@stylistic/eslint-plugin"],
       "globals": {
         "AudioWorkletGlobalScope": "readonly",
         "AudioWorkletProcessor": "readonly",
@@ -246,10 +229,7 @@
         "sampleRate": "readonly",
         "WorkletGlobalScope": "readonly"
       },
-      "plugins": [
-        "typescript",
-        "import"
-      ],
+      "plugins": ["typescript", "import"],
       "env": {
         "browser": true
       }

@@ -8,6 +8,7 @@ export const logUnsubscribe = mutation({
   args: {
     channelId: v.string(),
     channelTitle: v.string(),
+    channelThumbnail: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx)
@@ -16,6 +17,7 @@ export const logUnsubscribe = mutation({
       userId,
       channelId: args.channelId,
       channelTitle: args.channelTitle,
+      channelThumbnail: args.channelThumbnail,
       unsubscribedAt: Date.now(),
     })
   },

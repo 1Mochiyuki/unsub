@@ -21,6 +21,7 @@ export default defineSchema({
     userId: v.id('users'),
     channelId: v.string(),
     channelTitle: v.string(),
+    channelThumbnail: v.optional(v.string()),
     unsubscribedAt: v.number(),
   }).index('by_user_id', ['userId']),
   rate_limits: defineTable({

@@ -18,7 +18,6 @@ interface UsePaginationReturn {
 export function usePagination({
   initialPage,
   initialPageSize,
-  pageSizeOptions,
 }: UsePaginationProps): UsePaginationReturn {
   const [currentPage, setCurrentPage] = useState(initialPage)
   const [pageSize, setPageSize] = useState(initialPageSize)

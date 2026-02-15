@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 interface UseSelectionReturn {
   selectedIds: Set<string>
@@ -8,8 +8,6 @@ interface UseSelectionReturn {
   clearSelection: () => void
   selectAll: (allIds: Array<string>) => void
   selectRange: (fromId: string, toId: string, allIds: Array<string>) => void
-  getSelectedCount: () => number
-  isSelected: (id: string) => boolean
   lastSelectedId: string | null
 }
 
@@ -52,33 +50,25 @@ export function useSelection(): UseSelectionReturn {
     })
   }, [])
 
-  const selectRange = useCallback((fromId: string, toId: string, allIds: Array<string>) => {
-    const fromIndex = allIds.indexOf(fromId)
-    const toIndex = allIds.indexOf(toId)
+  const selectRange = useCallback(
+    (fromId: string, toId: string, allIds: Array<string>) => {
+      const fromIndex = allIds.indexOf(fromId)
+      const toIndex = allIds.indexOf(toId)
 
-    if (fromIndex === -1 || toIndex === -1) return
+      if (fromIndex === -1 || toIndex === -1) return
 
-    const start = Math.min(fromIndex, toIndex)
-    const end = Math.max(fromIndex, toIndex)
-    const rangeIds = allIds.slice(start, end + 1)
+      const start = Math.min(fromIndex, toIndex)
+      const end = Math.max(fromIndex, toIndex)
+      const rangeIds = allIds.slice(start, end + 1)
 
-    setSelectedIds((prev) => {
-      const newSet = new Set(prev)
-      rangeIds.forEach((id) => newSet.add(id))
-      return newSet
-    })
-    lastSelectedIdRef.current = toId
-  }, [])
-
-  const getSelectedCount = useCallback(() => {
-    return selectedIds.size
-  }, [selectedIds])
-
-  const isSelected = useCallback(
-    (id: string) => {
-      return selectedIds.has(id)
+      setSelectedIds((prev) => {
+        const newSet = new Set(prev)
+        rangeIds.forEach((id) => newSet.add(id))
+        return newSet
+      })
+      lastSelectedIdRef.current = toId
     },
-    [selectedIds],
+    [],
   )
 
   return {
@@ -89,8 +79,6 @@ export function useSelection(): UseSelectionReturn {
     clearSelection,
     selectAll,
     selectRange,
-    getSelectedCount,
-    isSelected,
     lastSelectedId: lastSelectedIdRef.current,
   }
 }
