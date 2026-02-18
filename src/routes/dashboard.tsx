@@ -184,13 +184,18 @@ function DashboardPage() {
     clearSelection()
   }, [clearSelection])
 
-  const handlePageSizeChange = useCallback((size: number | 'all') => {
-    const pageSizeValue = size === 'all' ? SHOW_ALL_PAGE_SIZE : size
-    return {
-      page: 1,
-      pageSize: pageSizeValue === SHOW_ALL_PAGE_SIZE ? 'all' : pageSizeValue,
-    }
-  }, [])
+  const handlePageSizeChange = useCallback(
+    (size: number | 'all') => {
+      const pageSizeValue = size === 'all' ? SHOW_ALL_PAGE_SIZE : size
+      navigate({
+        search: {
+          page: 1,
+          pageSize: pageSizeValue,
+        },
+      })
+    },
+    [navigate],
+  )
 
   const searchBarActions = useMemo(
     () => (
