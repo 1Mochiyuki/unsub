@@ -401,18 +401,17 @@ function HistoryPage() {
                   minHeight: 'calc(100vh - 300px)',
                 }}
               >
-                {paginatedHistory.map((item, index) => (
+                {paginatedHistory.map((item) => (
                   <div
                     key={item._id}
                     data-id={item._id.toString()}
                     data-selection-item
                     className={cn(
-                      'content-auto group p-6 bg-card border border-border rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-400',
+                      'content-auto group p-6 bg-card border border-border rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all cursor-pointer',
                       selectedIds.has(item._id.toString())
                         ? 'border-primary bg-primary/5'
                         : 'hover:border-primary/50 hover:bg-card/80',
                     )}
-                    style={{ animationDelay: `${index * 50}ms` }}
                     ref={(el) => {
                       if (el) itemsRef.current.set(item._id.toString(), el)
                       else itemsRef.current.delete(item._id.toString())
