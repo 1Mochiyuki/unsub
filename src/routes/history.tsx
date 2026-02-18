@@ -396,11 +396,9 @@ function HistoryPage() {
               </div>
             ) : (
               <div
-                className="flex flex-col gap-12 pb-20 select-none overflow-auto"
+                className="flex flex-col gap-5 pb-20 select-none"
                 style={{
-                  contentVisibility: 'auto',
-                  height: 'calc(100vh - 400px)',
-                  minHeight: '600px',
+                  minHeight: 'calc(100vh - 300px)',
                 }}
               >
                 {paginatedHistory.map((item, index) => (
@@ -409,7 +407,7 @@ function HistoryPage() {
                     data-id={item._id.toString()}
                     data-selection-item
                     className={cn(
-                      'group p-6 bg-card border border-border rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-400',
+                      'content-auto group p-6 bg-card border border-border rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-400',
                       selectedIds.has(item._id.toString())
                         ? 'border-primary bg-primary/5'
                         : 'hover:border-primary/50 hover:bg-card/80',

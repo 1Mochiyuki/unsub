@@ -5,7 +5,6 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Subscription } from '@/types/dashboard'
 import { ChannelCard } from '@/components/ChannelCard'
 import { useSubscriptions } from '@/hooks/useSubscriptions'
-import { usePagination } from '@/hooks/usePagination'
 import { useSearch } from '@/hooks/useSearch'
 import { useSelection } from '@/hooks/useSelection'
 import { useDragSelection } from '@/hooks/useDragSelection'
@@ -23,6 +22,15 @@ const SHOW_ALL_PAGE_SIZE = Infinity
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardPage,
+  validateSearch: (search) => {
+    const page = Number(search.page || 1)
+    const pageSize =
+      search.pageSize === 'all' ? Infinity : Number(search.pageSize || 50)
+    return {
+      page: page < 1 ? 1 : page,
+      pageSize: pageSize,
+    }
+  },
   loader: async () => {
     await new Promise<void>((resolve) => {
       if (typeof requestIdleCallback !== 'undefined') {
@@ -45,6 +53,9 @@ export const Route = createFileRoute('/dashboard')({
 })
 
 function DashboardPage() {
+  const { page, pageSize: searchPageSize } = Route.useSearch()
+  const navigate = Route.useNavigate()
+
   const {
     subscriptions,
     isLoading,
@@ -55,16 +66,17 @@ function DashboardPage() {
     cancelPrefetch,
     removeSubscription,
     rollbackSubscription,
-  } = useSubscriptions({ initialPageSize: 50 })
-
-  const { currentPage, pageSize, setCurrentPage, setPageSize, totalPages } =
-    usePagination({
-      initialPage: 1,
-      initialPageSize: 50,
-    })
+  } = useSubscriptions({
+    initialPageSize: searchPageSize === Infinity ? 50 : searchPageSize,
+  })
 
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+
+  useEffect(() => {
+    if (page === 1 && isLoading) return
+    fetchPage(page, searchPageSize === Infinity ? 50 : searchPageSize)
+  }, [page, searchPageSize, fetchPage, isLoading])
 
   const filteredSubscriptions = useSearch({
     items: subscriptions,
@@ -74,27 +86,30 @@ function DashboardPage() {
   })
 
   const paginatedSubscriptions = useMemo(() => {
-    if (pageSize === Infinity) {
+    if (searchPageSize === Infinity) {
       return filteredSubscriptions
     }
-    const startIndex = (currentPage - 1) * pageSize
-    const endIndex = startIndex + pageSize
+    const startIndex = (page - 1) * searchPageSize
+    const endIndex = startIndex + searchPageSize
     return filteredSubscriptions.slice(startIndex, endIndex)
-  }, [filteredSubscriptions, currentPage, pageSize])
+  }, [filteredSubscriptions, page, searchPageSize])
 
-  const totalPagesCount = totalPages(filteredSubscriptions.length, totalResults)
+  const totalPagesCount = useMemo(() => {
+    if (searchPageSize === Infinity) {
+      return 1
+    }
+    if (totalResults) {
+      return Math.ceil(totalResults / searchPageSize)
+    }
+    return Math.ceil(filteredSubscriptions.length / searchPageSize)
+  }, [totalResults, filteredSubscriptions.length, searchPageSize])
 
-  const {
-    selectedIds,
-    toggleSelection,
-    setSelection,
-    clearSelection,
-    selectAll,
-  } = useSelection()
+  const { selectedIds, setSelection, clearSelection, selectAll } =
+    useSelection()
 
   const itemsRef = useRef<Map<string, HTMLDivElement>>(new Map())
 
-  const useVirtualization = viewMode === 'list' && pageSize === Infinity
+  const useVirtualization = viewMode === 'list' && searchPageSize === Infinity
 
   const rowVirtualizer = useVirtualizer({
     count: useVirtualization ? paginatedSubscriptions.length : 0,
@@ -114,26 +129,26 @@ function DashboardPage() {
   const {
     isUnsubscribing,
     confirmation,
+    failedUnsubscribes,
     confirmSingleUnsubscribe,
     handleSingleUnsubscribe,
     promptBulkUnsubscribe,
     performBulkUnsubscribe,
+    retryFailedUnsubscribes,
+    clearFailedUnsubscribes,
     dismissConfirmation,
   } = useUnsubscribe()
 
-  useEffect(() => {
-    if (!isLoading) {
-      fetchPage(currentPage, pageSize)
-    }
-  }, [currentPage, pageSize, fetchPage, isLoading])
-
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page)
-  }, [])
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      navigate({ search: (prev) => ({ ...prev, page: newPage }) })
+    },
+    [navigate],
+  )
 
   const handlePrefetchNext = useCallback(() => {
-    prefetchPage(currentPage, pageSize, totalPagesCount, isFetchingPage)
-  }, [currentPage, pageSize, totalPagesCount, isFetchingPage, prefetchPage])
+    prefetchPage(page, searchPageSize, totalPagesCount, isFetchingPage)
+  }, [page, searchPageSize, totalPagesCount, isFetchingPage, prefetchPage])
 
   const handleBulkUnsubscribe = useCallback(() => {
     promptBulkUnsubscribe(selectedIds)
@@ -145,8 +160,8 @@ function DashboardPage() {
         selectedIds,
         subscriptions,
         removeSubscription,
-        rollbackSubscription,
         clearSelection,
+        rollbackSubscription,
       )
     } else {
       await handleSingleUnsubscribe(removeSubscription, rollbackSubscription)
@@ -169,16 +184,37 @@ function DashboardPage() {
     clearSelection()
   }, [clearSelection])
 
-  const handlePageSizeChange = useCallback(
-    async (size: number | 'all') => {
-      if (size === 'all') {
-        setPageSize(SHOW_ALL_PAGE_SIZE)
-        setCurrentPage(1)
-      } else {
-        setPageSize(size)
-      }
-    },
-    [setCurrentPage],
+  const handlePageSizeChange = useCallback((size: number | 'all') => {
+    const pageSizeValue = size === 'all' ? SHOW_ALL_PAGE_SIZE : size
+    return {
+      page: 1,
+      pageSize: pageSizeValue === SHOW_ALL_PAGE_SIZE ? 'all' : pageSizeValue,
+    }
+  }, [])
+
+  const searchBarActions = useMemo(
+    () => (
+      <div className="flex items-center gap-2">
+        <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+        <Button
+          variant={selectedIds.size > 0 ? 'destructive' : 'secondary'}
+          disabled={!selectedIds.size || isUnsubscribing || isLoading}
+          onClick={handleBulkUnsubscribe}
+          className="rounded-xl font-bold transition-all duration-200"
+        >
+          {selectedIds.size > 0
+            ? `Unsubscribe (${selectedIds.size})`
+            : 'Unsubscribe'}
+        </Button>
+      </div>
+    ),
+    [
+      viewMode,
+      selectedIds.size,
+      isUnsubscribing,
+      isLoading,
+      handleBulkUnsubscribe,
+    ],
   )
 
   return (
@@ -192,6 +228,42 @@ function DashboardPage() {
             isVisible={isSelecting}
             selectionBox={selectionBox}
           />
+          {failedUnsubscribes.length > 0 && (
+            <div className="max-w-7xl mx-auto px-4 md:px-8 pt-4">
+              <div className="flex items-center justify-between p-4 bg-warning/10 border border-warning/30 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <span className="text-warning font-medium">
+                    {failedUnsubscribes.length} unsubscribe
+                    {failedUnsubscribes.length > 1 ? 's' : ''} failed
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearFailedUnsubscribes}
+                    className="rounded-lg"
+                  >
+                    Dismiss
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() =>
+                      retryFailedUnsubscribes(
+                        removeSubscription,
+                        rollbackSubscription,
+                      )
+                    }
+                    disabled={isUnsubscribing}
+                    className="rounded-lg"
+                  >
+                    {isUnsubscribing ? 'Retrying...' : 'Retry'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
             <SharedSearchBar
               searchQuery={searchQuery}
@@ -205,29 +277,12 @@ function DashboardPage() {
               isLoading={isLoading}
               placeholder="Search channels..."
               actionLabel="Unsubscribe"
-              actions={
-                <div className="flex items-center gap-2">
-                  <ViewToggle
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
-                  />
-                  <Button
-                    variant={selectedIds.size > 0 ? 'destructive' : 'secondary'}
-                    disabled={!selectedIds.size || isUnsubscribing || isLoading}
-                    onClick={handleBulkUnsubscribe}
-                    className="rounded-xl font-bold transition-all duration-200"
-                  >
-                    {selectedIds.size > 0
-                      ? `Unsubscribe (${selectedIds.size})`
-                      : 'Unsubscribe'}
-                  </Button>
-                </div>
-              }
+              actions={searchBarActions}
             />
 
             <SharedPagination
-              currentPage={currentPage}
-              pageSize={pageSize}
+              currentPage={page}
+              pageSize={searchPageSize}
               pageSizeOptions={PAGE_SIZE_OPTIONS}
               totalPages={totalPagesCount}
               filteredCount={filteredSubscriptions.length}
@@ -247,7 +302,7 @@ function DashboardPage() {
                 searchQuery={searchQuery}
                 onClearSearch={() => setSearchQuery('')}
               />
-            ) : viewMode === 'list' && pageSize === Infinity ? (
+            ) : viewMode === 'list' && searchPageSize === Infinity ? (
               <div className="pb-20 select-none relative">
                 <div style={{ height: rowVirtualizer.getTotalSize() }}>
                   {rowVirtualizer.getVirtualItems().map((virtualRow) => {
@@ -275,7 +330,6 @@ function DashboardPage() {
                           selectionState={
                             selectedIds.has(sub.id) ? 'selected' : 'default'
                           }
-                          onToggleSelect={() => toggleSelection(sub.id)}
                           onUnsubscribe={() => confirmSingleUnsubscribe(sub)}
                         />
                       </div>
@@ -296,6 +350,7 @@ function DashboardPage() {
                     data-selection-item
                     data-id={sub.id}
                     data-index={index}
+                    className="content-auto"
                     ref={(el) => {
                       if (el) itemsRef.current.set(sub.id, el)
                       else itemsRef.current.delete(sub.id)
@@ -307,7 +362,6 @@ function DashboardPage() {
                       selectionState={
                         selectedIds.has(sub.id) ? 'selected' : 'default'
                       }
-                      onToggleSelect={() => toggleSelection(sub.id)}
                       onUnsubscribe={() => confirmSingleUnsubscribe(sub)}
                     />
                   </div>
@@ -320,6 +374,7 @@ function DashboardPage() {
                     key={sub.id}
                     data-selection-item
                     data-id={sub.id}
+                    className="content-auto"
                     ref={(el) => {
                       if (el) itemsRef.current.set(sub.id, el)
                       else itemsRef.current.delete(sub.id)
@@ -331,7 +386,6 @@ function DashboardPage() {
                       selectionState={
                         selectedIds.has(sub.id) ? 'selected' : 'default'
                       }
-                      onToggleSelect={() => toggleSelection(sub.id)}
                       onUnsubscribe={() => confirmSingleUnsubscribe(sub)}
                     />
                   </div>
@@ -340,8 +394,8 @@ function DashboardPage() {
             )}
 
             <SharedPagination
-              currentPage={currentPage}
-              pageSize={pageSize}
+              currentPage={page}
+              pageSize={searchPageSize}
               pageSizeOptions={PAGE_SIZE_OPTIONS}
               totalPages={totalPagesCount}
               filteredCount={filteredSubscriptions.length}

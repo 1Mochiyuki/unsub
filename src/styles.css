@@ -237,3 +237,10 @@
       source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
   }
 }
+
+@layer utilities {
+  .content-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 115px;
+  }
+}

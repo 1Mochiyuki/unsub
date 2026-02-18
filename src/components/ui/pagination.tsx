@@ -49,11 +49,20 @@ function PaginationLink({
   size = 'icon',
   ...props
 }: PaginationLinkProps) {
+  const { href, onClick, ...restProps } = props
+
   return (
     <a
       aria-current={isActive ? 'page' : undefined}
       data-slot="pagination-link"
       data-active={isActive}
+      href={href === '#' ? undefined : href}
+      onClick={(e) => {
+        if (href === '#') {
+          e.preventDefault()
+        }
+        onClick?.(e)
+      }}
       className={cn(
         buttonVariants({
           variant: isActive ? 'outline' : 'ghost',
@@ -61,7 +70,7 @@ function PaginationLink({
         }),
         className,
       )}
-      {...props}
+      {...restProps}
     />
   )
 }

@@ -75,6 +75,7 @@ export function SharedPagination({
   const canGoFirst = currentPage > 1
   const canGoLast = currentPage < totalPages
 
+  const displayTotal = totalCount ?? filteredCount
   const label = itemName || unitLabel
 
   return (
@@ -86,20 +87,18 @@ export function SharedPagination({
         <span className="text-sm text-muted-foreground">
           {pageSize === Infinity ? (
             <>
-              Showing 1 - {filteredCount} of {filteredCount} {label}
+              Showing 1 - {filteredCount} of {displayTotal} {label}
             </>
           ) : (
             <>
               Showing{' '}
               {Math.min((currentPage - 1) * pageSize + 1, filteredCount)} -{' '}
               {Math.min(currentPage * pageSize, filteredCount)} of{' '}
-              {filteredCount} {label}
+              {displayTotal} {label}
             </>
           )}
-          {totalCount &&
-            totalCount > filteredCount &&
-            ` (total: ${totalCount})`}
         </span>
+
         <Select
           value={pageSize === Infinity ? 'all' : pageSize.toString()}
           onValueChange={(value) =>

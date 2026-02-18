@@ -40,6 +40,29 @@ export const getHistory = query({
   },
 })
 
+export const getHistoryCount = query({
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx)
+    if (!userId) {
+      return 0
+    }
+
+    const history = await ctx.db
+      .query('unsubscribed_history')
+      .withIndex('by_user_id', (q) => q.eq('userId', userId))
+      .collect()
+
+    return history.length
+  },
+})
+
+export const getGlobalUnsubCount = query({
+  handler: async (ctx) => {
+    const allHistory = await ctx.db.query('unsubscribed_history').collect()
+    return allHistory.length
+  },
+})
+
 export const removeHistoryItem = mutation({
   args: {
     id: v.id('unsubscribed_history'),

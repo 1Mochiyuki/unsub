@@ -1,7 +1,13 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { Authenticated, Unauthenticated, useConvexAuth } from 'convex/react'
+import {
+  Authenticated,
+  Unauthenticated,
+  useConvexAuth,
+  useQuery,
+} from 'convex/react'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { Filter, Shield, Trash2, Youtube } from 'lucide-react'
+import { api } from '../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -14,6 +20,30 @@ import {
 export const Route = createFileRoute('/')({
   component: IndexPage,
 })
+
+function GlobalStats() {
+  const unsubCount = useQuery(api.history.getGlobalUnsubCount)
+
+  if (unsubCount === undefined) {
+    return (
+      <div className="flex items-center justify-center gap-3">
+        <div className="w-8 h-8 bg-muted animate-pulse rounded" />
+        <div className="w-32 h-6 bg-muted animate-pulse rounded" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className="text-5xl md:text-6xl font-black text-primary tabular-nums">
+        {unsubCount.toLocaleString()}
+      </span>
+      <span className="text-sm md:text-base text-muted-foreground font-medium tracking-wide uppercase">
+        Channels Unsubscribed
+      </span>
+    </div>
+  )
+}
 
 function IndexPage() {
   const { signIn } = useAuthActions()
@@ -51,6 +81,8 @@ function IndexPage() {
           </p>
         </div>
 
+        <GlobalStats />
+
         <div className="flex flex-col sm:flex-row gap-4 w-full justify-center items-center animate__animated animate__fadeInUp animate__delay-1s">
           <Authenticated>
             <Button
@@ -58,7 +90,11 @@ function IndexPage() {
               size="lg"
               className="font-bold text-lg h-14 px-8 rounded-full shadow-lg hover:shadow-primary/20 transition-all"
             >
-              <Link to="/dashboard" preload="intent">
+              <Link
+                to="/dashboard"
+                search={{ page: 1, pageSize: 50 }}
+                preload="intent"
+              >
                 Go to Dashboard
               </Link>
             </Button>
